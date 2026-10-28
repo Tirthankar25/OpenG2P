@@ -1,0 +1,36 @@
+[launch] starting Policies MCP server on port 8788…
+
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│                                                                              │
+│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │
+│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │
+│                                                                              │
+│                                                                              │
+│                                FastMCP 4.0.10                                │
+│                            https://gofastmcp.com                             │
+│                                                                              │
+│      🖥  Server:      Policies (scheme information) — fetch-only, 4.0.10      │
+│      🚀 Deploy free: https://horizon.prefect.io                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│                          🎉 Update available: 4.1.4                          │
+│                      Run: pip install --upgrade fastmcp                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+[10/27/26 20:35:49] INFO     Starting MCP server 'Policies      transport.py:363
+                             (scheme information) — fetch-only'                 
+                             with transport 'http' on                           
+                             http://0.0.0.0:8788/mcp                            
+INFO:     Started server process [2408279]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8788 (Press CTRL+C to quit)
+[POLICIES] loaded 2 scheme(s): pm_kisan, smam
+[POLICIES] starting fetch-only Policies MCP server on 0.0.0.0:8788…
+INFO:     127.0.0.1:41712 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41712 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41712 - "POST /mcp HTTP/1.1" 200 OK

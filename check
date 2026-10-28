@@ -1,0 +1,4 @@
+curl -X POST http://localhost:8862/synthesize \
+     -H "Content-Type: application/json" \
+     -d '{"ref_audio_path": "/home/tirthankar/converse/tts_f5_voices/default/ref.wav", "ref_text": "But the industry has extended this observation, without much scrutiny, into a far more ambitious claim.", "gen_text": "Hello, this is a test of the English voice."}' \
+     --output /tmp/test_eng.wav

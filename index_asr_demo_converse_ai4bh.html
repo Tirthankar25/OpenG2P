@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- <title>OmnilingualASR</title> -->
+<style>
+  :root {
+    --bg:      #0d0d14;
+    --surface: #16161f;
+    --border:  #2a2a3a;
+    --accent:  #7c3aed;
+    --accent2: #a855f7;
+    --text:    #e8e4f0;
+    --muted:   #6b6880;
+    --success: #34d399;
+    --error:   #f87171;
+    --wave:    #7c3aed;
+    --radius:  14px;
+    --sans:    'Inter', system-ui, sans-serif;
+    --mono:    'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; padding: 28px 16px 64px;
+  }
+
+  header {
+    width: 100%; max-width: 960px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border); padding-bottom: 18px;
+  }
+  header h1 {
+    font-size: 1.65rem; font-weight: 700; letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #c4b5fd, #818cf8, #38bdf8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; margin-bottom: 4px;
+  }
+  header p { font-size: 0.83rem; color: var(--muted); }
+
+  main {
+    width: 100%; max-width: 960px;
+    display: grid; grid-template-columns: 290px 1fr;
+    gap: 18px; align-items: start;
+  }
+  @media (max-width: 680px) { main { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+  }
+
+  .sec-label {
+    font-size: 0.67rem; font-weight: 600;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px; display: block;
+  }
+
+  /* ── language grid ── */
+  .lang-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px; margin-bottom: 16px;
+  }
+  .lang-btn {
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-size: 0.81rem; padding: 8px 4px;
+    cursor: pointer; transition: all 0.15s; text-align: center;
+  }
+  .lang-btn:hover  { border-color: var(--accent); color: var(--accent2); }
+  .lang-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: #fff; font-weight: 600;
+  }
+  /* 'Other' button spans full width */
+  .lang-btn.other {
+    grid-column: 1 / -1;
+    background: transparent;
+    border: 1px dashed var(--border);
+    font-size: 0.78rem; color: var(--muted);
+  }
+  .lang-btn.other:hover  { border-color: var(--accent2); color: var(--accent2); }
+  .lang-btn.other.active {
+    background: #1e1b2e;
+    border: 1px dashed var(--accent2);
+    color: var(--accent2); font-weight: 600;
+  }
+
+  /* ── detected language badge ── */
+  #detected-badge {
+    display: none;
+    font-size: 0.72rem; color: var(--accent2);
+    background: #1e1b2e; border: 1px solid #2d2a42;
+    border-radius: 6px; padding: 5px 10px;
+    margin-bottom: 14px; text-align: center;
+  }
+
+  /* ── mic selector ── */
+  select#mic-select {
+    width: 100%; background: #1e1b2e;
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 0.8rem;
+    padding: 8px 10px; margin-bottom: 16px;
+    cursor: pointer; outline: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%236b6880'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  select#mic-select:focus { border-color: var(--accent); }
+
+  /* ── waveform canvas ── */
+  #waveform-wrap {
+    background: #0a0a12;
+    border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+    margin-bottom: 14px; height: 56px;
+    display: flex; align-items: center;
+  }
+  #waveform {
+    width: 100%; height: 56px; display: block;
+  }
+
+  /* ── mic button ── */
+  .mic-wrap {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px; margin: 2px 0 14px;
+  }
+  #mic-btn {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 4px 18px rgba(124,58,237,0.4);
+    transition: transform 0.15s; display: flex;
+    align-items: center; justify-content: center;
+  }
+  #mic-btn:hover { transform: scale(1.07); }
+  #mic-btn svg   { width: 24px; height: 24px; fill: #fff; }
+  #mic-btn.recording {
+    background: linear-gradient(135deg, #dc2626, #f87171);
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0    rgba(220,38,38,0.6); }
+    70%  { box-shadow: 0 0 0 14px rgba(220,38,38,0);   }
+    100% { box-shadow: 0 0 0 0    rgba(220,38,38,0);   }
+  }
+  #mic-label { font-size: 0.74rem; color: var(--muted); text-align: center; }
+
+  /* ── action buttons ── */
+  .btn-row { display: flex; gap: 7px; margin-bottom: 8px; }
+  .action-btn {
+    flex: 1; padding: 8px 0; border-radius: 8px;
+    font-size: 0.78rem; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; border: 1px solid var(--border);
+    background: transparent; color: var(--text);
+  }
+  .action-btn:hover        { border-color: var(--accent); color: var(--accent2); }
+  .action-btn.danger:hover { border-color: var(--error);  color: var(--error); }
+  /* Chat Mode toggle — same action-btn base, distinct "on" look */
+  .action-btn.toggle-on {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: #fff; font-weight: 600;
+  }
+
+  /* ── tips ── */
+  .tips {
+    font-size: 0.74rem; color: var(--muted); line-height: 1.75;
+    border-top: 1px solid var(--border);
+    padding-top: 12px; margin-top: 6px;
+  }
+  .tips strong { color: var(--text); }
+
+  /* ── right panel ── */
+  .panel-label {
+    font-size: 0.67rem; font-weight: 600;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .copy-btn {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 0.72rem;
+    padding: 2px 6px; border-radius: 4px; transition: color 0.15s;
+  }
+  .copy-btn:hover { color: var(--accent2); }
+
+  #transcript,
+  #translation,
+  #chat-response-en,
+  #chat-response {
+    width: 100%; min-height: 76px; max-height: 120px; background: #0a0a12;
+    border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-family: var(--sans);
+    font-size: 0.94rem; line-height: 1.7;
+    resize: vertical; outline: none; overflow-y: auto;
+    padding: 10px 12px; margin-bottom: 10px;
+  }
+  #transcript::placeholder,
+  #translation::placeholder,
+  #chat-response-en::placeholder,
+  #chat-response::placeholder { color: var(--muted); }
+
+  #status-bar {
+    background: #1e1b2e; border: 1px solid #2d2a42;
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 0.8rem; color: #a78bfa;
+    min-height: 38px; margin-bottom: 10px; transition: color 0.2s;
+  }
+  #status-bar.error { color: var(--error); }
+  #status-bar.ok    { color: var(--success); }
+
+  #stats { font-size: 0.72rem; color: var(--muted); font-family: var(--mono); }
+
+  #llm-status-bar {
+    font-size: 0.72rem; color: var(--muted); margin: -4px 0 12px;
+  }
+
+  /* Chat Mode status pill, shown in the Chat Response panel header */
+  .mode-pill {
+    display: inline-block; margin-left: 8px;
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 2px 7px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--muted);
+    vertical-align: middle; transition: all 0.15s;
+  }
+  .mode-pill.on {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: #fff;
+  }
+  /* "Processing" indicator on the LLM Response panels — visible from the
+     moment a Chat Mode turn is queued until its reply is shown (see
+     applyLlmBusy() in JS / session["llm_busy"] server-side). */
+  .mode-pill.processing {
+    margin-left: 6px;
+    background: rgba(167, 139, 250, 0.18);
+    border-color: var(--accent2); color: var(--accent2);
+    animation: llm-processing-pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes llm-processing-pulse {
+    0%, 100% { opacity: 1;   }
+    50%      { opacity: 0.45; }
+  }
+  /* Shown next to "LLM Response — Translated" when the TTS voice for the
+     current language is falling back to a different language's profile
+     (see voice-fallback-badge in JS) — cross-lingual voice cloning is a
+     known weak spot for this kind of model, so this is a visible heads-up
+     rather than a silent quality drop. */
+  .mode-pill.warn {
+    background: rgba(248, 113, 113, 0.14);
+    border-color: var(--error); color: var(--error);
+  }
+
+  .conn-row {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.71rem; color: var(--muted); margin-bottom: 8px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
+  .dot.connected    { background: var(--success); }
+  .dot.disconnected { background: var(--error); }
+
+  footer { margin-top: 32px; font-size: 0.7rem; color: var(--muted); text-align: center; }
+  #clock { font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<header>
+  <!-- <h1>🎙 OmnilingualASR</h1> -->
+  <h1>🎙   OpenG2P STT-TTS demo <span id="demo-date"></span></h1>
+  <p>Hindi · English · Bengali · Kannada · Tamil · Gujarati · Marathi — Native script output · VAD-powered · OpenG2P Project</p>
+</header>
+
+<main>
+  <!-- ── left ── -->
+  <div class="card">
+
+    <span class="sec-label">Language</span>
+    <div class="lang-grid">
+      <button class="lang-btn" data-lang="hin">🇮🇳 Hindi</button>
+      <button class="lang-btn active" data-lang="eng">🏴 English</button>
+      <button class="lang-btn" data-lang="ben">🇧🇩 Bengali</button>
+      <button class="lang-btn" data-lang="kan">🇮🇳 Kannada</button>
+      <button class="lang-btn" data-lang="tam">🇮🇳 Tamil</button>
+      <button class="lang-btn" data-lang="guj">🇮🇳 Gujarati</button>
+      <button class="lang-btn" data-lang="mar">🇮🇳 Marathi</button>
+    </div>
+
+    <span class="sec-label">Microphone</span>
+    <select id="mic-select">
+      <option value="">— select microphone —</option>
+    </select>
+
+    <!-- live waveform -->
+    <span class="sec-label">Input Level</span>
+    <div id="waveform-wrap">
+      <canvas id="waveform"></canvas>
+    </div>
+
+    <div class="mic-wrap">
+      <button id="mic-btn" title="Click to start recording">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1
+            18.93V22h2v-2.07A8.001 8.001 0 0 0 20 12h-2a6 6 0 0 1-12
+            0H4a8.001 8.001 0 0 0 7 7.93z"/>
+        </svg>
+      </button>
+      <span id="mic-label">Click to start</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="action-btn" id="chat-mode-btn">💬 Chat Mode: Off</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="action-btn" id="clear-btn">🗑 Clear</button>
+      <button class="action-btn danger" id="disconnect-btn">⏏ Disconnect</button>
+    </div>
+
+    <!-- <div class="tips">
+      <strong>How it works</strong><br>
+      Select mic → choose language → click mic ·
+      VAD detects speech · each pause triggers transcription<br><br>
+
+      <strong>Tips</strong><br>
+      ~0.4 s pause = end of utterance · Speak ≥ 0.5 s
+    </div> -->
+  </div>
+
+  <!-- ── right ── -->
+  <div class="card">
+    <div class="conn-row">
+      <span class="dot" id="conn-dot"></span>
+      <span id="conn-label">Connecting…</span>
+    </div>
+
+    <div class="panel-label">
+      Transcription (native script)
+      <button class="copy-btn" id="copy-btn">⎘ Copy</button>
+    </div>
+
+    <textarea id="transcript" rows="3"
+      placeholder="Native script transcription appears here as you speak…"
+      readonly></textarea>
+
+    <div class="panel-label" style="margin-top:10px;">
+      English Translation
+      <button class="copy-btn" id="copy-eng-btn">⎘ Copy</button>
+    </div>
+    <textarea id="translation" rows="3"
+      placeholder="English translation appears here…"
+      readonly></textarea>
+
+    <div class="panel-label" style="margin-top:10px;">
+      <span>LLM Response — English <span id="chat-mode-indicator" class="mode-pill">Chat Mode: Off</span><span id="llm-processing-pill" class="mode-pill processing" style="display:none;">⏳ Processing…</span></span>
+      <button class="copy-btn" id="copy-ai-en-btn">⎘ Copy</button>
+    </div>
+    <textarea id="chat-response-en" rows="3"
+      placeholder="Turn on Chat Mode — the LLM's reply (as it returns it, in English) appears here…"
+      readonly></textarea>
+
+    <div class="panel-label" style="margin-top:10px;">
+      <span>LLM Response — Translated <span id="voice-fallback-badge" class="mode-pill warn" style="display:none;"></span></span>
+      <span>
+        <button class="copy-btn" id="speak-btn" title="Play this reply aloud, in the app's default voice">🔊 Play</button>
+        <button class="copy-btn" id="copy-ai-btn">⎘ Copy</button>
+      </span>
+    </div>
+    <textarea id="chat-response" rows="3"
+      placeholder="…then translated into your selected language here."
+      readonly></textarea>
+    <audio id="tts-audio" style="display:none"></audio>
+
+    <div id="status-bar">🎙 Ready — select a microphone and click the mic button.</div>
+    <div id="llm-status-bar"></div>
+    <div id="stats"></div>
+  </div>
+</main>
+
+<footer>Demo by Tirthankar · OpenG2P Project · <span id="clock"></span></footer>
+
+<script>
+// ── config ───────────────────────────────────────────────────────────────────
+const SERVER = "http://localhost:7500";
+const WS_URL = "ws://localhost:7500";
+
+// ── state ────────────────────────────────────────────────────────────────────
+let sid         = null;
+let ws          = null;
+let mediaStream = null;
+let audioCtx    = null;
+let workletNode = null;
+let analyser    = null;
+let animFrame   = null;
+let recording   = false;
+let language    = "eng";
+let chatMode    = false;
+
+
+const ENABLE_BARGE_IN   = false;
+const BARGE_IN_GRACE_MS = 500;
+let ttsPlaying          = false;   // true for the whole duration of playback
+let micArmedForBargeIn  = false;   // true once the grace window has elapsed
+let bargeInGraceTimer   = null;
+
+// ── DOM ──────────────────────────────────────────────────────────────────────
+const micBtn        = document.getElementById("mic-btn");
+const micLabel      = document.getElementById("mic-label");
+const micSelect     = document.getElementById("mic-select");
+const clearBtn      = document.getElementById("clear-btn");
+const disconnectBtn = document.getElementById("disconnect-btn");
+const copyBtn       = document.getElementById("copy-btn");
+const transcript    = document.getElementById("transcript");
+const translationEl = document.getElementById("translation");
+const statusBar     = document.getElementById("status-bar");
+const statsEl       = document.getElementById("stats");
+const chatModeBtn      = document.getElementById("chat-mode-btn");
+const chatModeIndicator = document.getElementById("chat-mode-indicator");
+const chatResponseEl   = document.getElementById("chat-response");
+const chatResponseEn   = document.getElementById("chat-response-en");
+const llmStatusBar     = document.getElementById("llm-status-bar");
+const llmProcessingPill = document.getElementById("llm-processing-pill");
+const connDot       = document.getElementById("conn-dot");
+const connLabel     = document.getElementById("conn-label");
+const clockEl       = document.getElementById("clock");
+const demoDateEl    = document.getElementById("demo-date");
+const canvas        = document.getElementById("waveform");
+const detectedBadge = document.getElementById("detected-badge");
+const detectedLang  = document.getElementById("detected-lang");
+const voiceFallbackBadge = document.getElementById("voice-fallback-badge");
+const ctx2d         = canvas.getContext("2d");
+
+// Mirrors the backend's LANG_LABELS (js_asr_demo_server_ai4bh_xslate.py) —
+// only used for display text in voiceFallbackBadge below.
+const LANG_LABELS = {
+  hin: "Hindi", eng: "English", ben: "Bengali", kan: "Kannada",
+  tam: "Tamil", ory: "Odia", guj: "Gujarati", mar: "Marathi",
+};
+
+function updateVoiceFallbackBadge(msg) {
+  if (msg.voice_ready && msg.voice_profile_fallback) {
+    const have = LANG_LABELS[msg.voice_profile_lang] || msg.voice_profile_lang;
+    voiceFallbackBadge.textContent = `⚠ using ${have} voice — record one for this language at /admin`;
+    voiceFallbackBadge.style.display = "inline-block";
+  } else {
+    voiceFallbackBadge.style.display = "none";
+  }
+}
+
+function scrollToBottom(el) {
+  requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+}
+
+function clearDisplayWindows() {
+  transcript.value    = "";
+  translationEl.value = "";
+  statsEl.textContent = "";
+  chatResponseEl.value = "";
+  chatResponseEn.value = "";
+  llmStatusBar.textContent = "";
+  applyLlmBusy(false);
+}
+
+function applyLlmBusy(busy) {
+  llmProcessingPill.style.display = busy ? "inline-block" : "none";
+}
+
+// ── clock ────────────────────────────────────────────────────────────────────
+setInterval(() => { clockEl.textContent = new Date().toLocaleString(); }, 1000);
+
+demoDateEl.textContent = new Date().toLocaleDateString(
+  "en-US", { month: "long", day: "numeric", year: "numeric" }
+);
+
+// ── waveform ─────────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+function drawIdle() {
+  const W = canvas.width, H = canvas.height;
+  ctx2d.clearRect(0, 0, W, H);
+  ctx2d.strokeStyle = "#2a2a3a";
+  ctx2d.lineWidth   = 1;
+  ctx2d.beginPath();
+  ctx2d.moveTo(0, H / 2);
+  ctx2d.lineTo(W, H / 2);
+  ctx2d.stroke();
+}
+
+function drawWaveform() {
+  if (!analyser) { drawIdle(); return; }
+
+  const bufLen = analyser.frequencyBinCount;
+  const data   = new Float32Array(bufLen);
+  analyser.getFloatTimeDomainData(data);
+
+  const W = canvas.width, H = canvas.height;
+  ctx2d.clearRect(0, 0, W, H);
+
+  // Glow effect
+  ctx2d.shadowBlur  = 8;
+  ctx2d.shadowColor = "#7c3aed";
+  ctx2d.strokeStyle = "#a855f7";
+  ctx2d.lineWidth   = 1.5;
+  ctx2d.beginPath();
+
+  const step = W / bufLen;
+  for (let i = 0; i < bufLen; i++) {
+    const x = i * step;
+    const y = (1 - (data[i] + 1) / 2) * H;
+    i === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+  }
+  ctx2d.stroke();
+  ctx2d.shadowBlur = 0;
+
+  animFrame = requestAnimationFrame(drawWaveform);
+}
+
+drawIdle();
+
+// ── enumerate microphones ────────────────────────────────────────────────────
+async function loadMicDevices() {
+  try {
+    // Request permission once — browser will NOT ask again for same origin
+    const tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
+    tmp.getTracks().forEach(t => t.stop());   // release hardware immediately
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const mics    = devices.filter(d => d.kind === "audioinput");
+
+    micSelect.innerHTML = "";
+    mics.forEach((d, i) => {
+      const opt = document.createElement("option");
+      opt.value = d.deviceId;
+      opt.textContent = d.label || `Microphone ${i + 1}`;
+      if (d.label.toLowerCase().includes("built-in") ||
+          d.label.toLowerCase().includes("internal") ||
+          d.label.toLowerCase().includes("macbook")) {
+        opt.selected = true;
+      }
+      micSelect.appendChild(opt);
+    });
+    setStatus("🎙 Ready — select a microphone and click the mic button.");
+  } catch (e) {
+    setStatus("Could not enumerate microphones: " + e.message, "error");
+  }
+}
+
+// ── language buttons ─────────────────────────────────────────────────────────
+document.querySelectorAll(".lang-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    document.querySelectorAll(".lang-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    language = btn.dataset.lang;
+
+    if (sid) {
+      const res = await fetch(`${SERVER}/session/${sid}/language`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ language }),
+      });
+      const data = await res.json().catch(() => ({}));
+      updateVoiceFallbackBadge(data);
+      setStatus(`Language set to ${btn.textContent.trim()}`, "ok");
+      transcript.value = "";
+      document.getElementById("translation").value = "";
+      statsEl.textContent = "";
+      chatResponseEl.value = "";
+      chatResponseEn.value = "";
+      llmStatusBar.textContent = "";
+      ttsAudio.pause();
+      resetSpeakBtn();
+    }
+  });
+});
+
+// ── session + WebSocket ──────────────────────────────────────────────────────
+async function initSession() {
+  try {
+    const res  = await fetch(`${SERVER}/session`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ language }),
+    });
+    const data = await res.json();
+    sid = data.sid;
+    console.log("Session:", sid);
+    openWebSocket();
+
+    // Get the initial state right away — a fresh session has sent no WS
+    // "update" yet, so without this the "processing" pill wouldn't reflect
+    // reality until the user's first utterance.
+    try {
+      const stateRes = await fetch(`${SERVER}/session/${sid}/state`);
+      const state    = await stateRes.json();
+      applyLlmBusy(!!state.llm_busy);
+      updateVoiceFallbackBadge(state);
+    } catch (e) {
+      console.warn("Could not fetch initial session state:", e);
+    }
+  } catch (e) {
+    setStatus("Cannot reach server — is the tunnel active?", "error");
+    connDot.className     = "dot disconnected";
+    connLabel.textContent = "Server unreachable";
+  }
+}
+
+function openWebSocket() {
+  ws = new WebSocket(`${WS_URL}/ws/${sid}`);
+  ws.binaryType = "arraybuffer";
+
+  ws.onopen = () => {
+    connDot.className     = "dot connected";
+    connLabel.textContent = "Connected";
+  };
+  ws.onclose = () => {
+    connDot.className     = "dot disconnected";
+    connLabel.textContent = "Disconnected";
+    ws = null;
+  };
+  ws.onerror = () => {
+    connDot.className     = "dot disconnected";
+    connLabel.textContent = "Connection error";
+  };
+  ws.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.type === "update") {
+      if (msg.transcript)  { transcript.value = msg.transcript; scrollToBottom(transcript); }
+      if (msg.translation) { translationEl.value = msg.translation; scrollToBottom(translationEl); }
+      if (msg.status)      setStatus(msg.status, "ok");
+      if (msg.stats)       statsEl.textContent = msg.stats;
+      if (msg.llm_response)    { chatResponseEl.value = msg.llm_response; scrollToBottom(chatResponseEl); }
+      if (msg.llm_response_en) { chatResponseEn.value = msg.llm_response_en; scrollToBottom(chatResponseEn); }
+      if (msg.llm_status)      llmStatusBar.textContent = msg.llm_status;
+      if (typeof msg.llm_busy === "boolean") applyLlmBusy(msg.llm_busy);
+      updateVoiceFallbackBadge(msg);
+
+    } else if (msg.type === "speak") {
+      const blob = _b64ToBlob(msg.audio_b64, msg.mime_type);
+      startPlayback(blob).catch(e => {
+        console.warn("Live playback failed to start:", e);
+        resetSpeakBtn();
+      });
+
+    } else if (msg.type === "stop_playback") {
+      ttsAudio.pause();
+      resetSpeakBtn();
+    }
+  };
+}
+
+// ── AudioWorklet ─────────────────────────────────────────────────────────────
+const WORKLET_CODE = `
+class PCMProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this._buf       = new Float32Array(0);
+    this._chunkSize = 4096;
+  }
+  process(inputs) {
+    const ch = inputs[0][0];
+    if (!ch) return true;
+    const merged = new Float32Array(this._buf.length + ch.length);
+    merged.set(this._buf);
+    merged.set(ch, this._buf.length);
+    this._buf = merged;
+    while (this._buf.length >= this._chunkSize) {
+      const chunk = this._buf.slice(0, this._chunkSize);
+      this._buf   = this._buf.slice(this._chunkSize);
+      this.port.postMessage(chunk.buffer, [chunk.buffer]);
+    }
+    return true;
+  }
+}
+registerProcessor('pcm-processor', PCMProcessor);
+`;
+
+// ── mic toggle ───────────────────────────────────────────────────────────────
+micBtn.addEventListener("click", async () => {
+  if (!recording) await startRecording();
+  else            stopRecording();
+});
+
+async function startRecording() {
+  if (!sid) await initSession();
+
+  const deviceId = micSelect.value;
+  try {
+    // Permission already granted by loadMicDevices() — this will NOT
+    // show the browser picker again. Use ideal (not exact) to silently
+    // prefer the chosen device.
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: deviceId
+        ? { deviceId: { ideal: deviceId }, channelCount: 1,
+            echoCancellation: true, noiseSuppression: true }
+        : { channelCount: 1, echoCancellation: true, noiseSuppression: true }
+    });
+  } catch (e) {
+    setStatus("Microphone error: " + e.message, "error");
+    return;
+  }
+
+  const nativeSR = mediaStream.getAudioTracks()[0].getSettings().sampleRate || 44100;
+  audioCtx = new AudioContext({ sampleRate: nativeSR });
+  const src = audioCtx.createMediaStreamSource(mediaStream);
+
+  // ── analyser for waveform ──
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;
+  src.connect(analyser);
+
+  // ── worklet for PCM sending ──
+  const blob    = new Blob([WORKLET_CODE], { type: "application/javascript" });
+  const blobURL = URL.createObjectURL(blob);
+  await audioCtx.audioWorklet.addModule(blobURL);
+  URL.revokeObjectURL(blobURL);
+
+  workletNode = new AudioWorkletNode(audioCtx, "pcm-processor");
+  src.connect(workletNode);
+
+  workletNode.port.onmessage = (e) => {
+    if (!recording || !ws || ws.readyState !== WebSocket.OPEN) return;
+    if (ttsPlaying && !micArmedForBargeIn) return;
+    const pcm  = new Float32Array(e.data);
+    const sr   = Math.round(audioCtx.sampleRate);
+    const buf  = new ArrayBuffer(4 + pcm.byteLength);
+    const view = new DataView(buf);
+    view.setUint32(0, sr, true);
+    new Float32Array(buf, 4).set(pcm);
+    ws.send(buf);
+  };
+
+  recording = true;
+  drawWaveform();
+  micBtn.classList.add("recording");
+  micLabel.textContent = "Recording… click to stop";
+  setStatus("🔴 Listening — speak now…");
+}
+
+function stopRecording() {
+  recording = false;
+
+  // Empty frame → server flush
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    const buf  = new ArrayBuffer(4);
+    const view = new DataView(buf);
+    view.setUint32(0, 16000, true);
+    ws.send(buf);
+  }
+
+  if (animFrame)    { cancelAnimationFrame(animFrame); animFrame = null; }
+  if (workletNode)  { workletNode.port.close(); workletNode.disconnect(); workletNode = null; }
+  analyser = null;
+  if (audioCtx)     { audioCtx.close(); audioCtx = null; }
+  if (mediaStream)  { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+
+  drawIdle();
+  micBtn.classList.remove("recording");
+  micLabel.textContent = "Click to start";
+  setStatus("⏹ Stopped.");
+}
+
+// ── disconnect ────────────────────────────────────────────────────────────────
+disconnectBtn.addEventListener("click", () => {
+  if (recording) stopRecording();
+  if (ws)        { ws.close(); ws = null; }
+  sid = null;
+  connDot.className     = "dot disconnected";
+  connLabel.textContent = "Disconnected — reload to reconnect";
+  setStatus("Disconnected.");
+  clearDisplayWindows();
+  chatMode = false;
+  setChatModeUI(false);
+  ttsAudio.pause();
+  resetSpeakBtn();
+});
+
+// ── clear ─────────────────────────────────────────────────────────────────────
+clearBtn.addEventListener("click", async () => {
+  if (sid) await fetch(`${SERVER}/session/${sid}/clear`, { method: "POST" });
+  clearDisplayWindows();
+  ttsAudio.pause();
+  resetSpeakBtn();
+  setStatus("🔄 Cleared — ready to listen.");
+});
+
+// ── Chat Mode ─────────────────────────────────────────────────────────────────
+function setChatModeUI(on) {
+  chatModeBtn.textContent = on ? "💬 Chat Mode: On" : "💬 Chat Mode: Off";
+  chatModeBtn.classList.toggle("toggle-on", on);
+  chatModeIndicator.textContent = on ? "Chat Mode: On" : "Chat Mode: Off";
+  chatModeIndicator.classList.toggle("on", on);
+}
+
+chatModeBtn.addEventListener("click", async () => {
+  if (!sid) {
+    setStatus("No active session yet — click the mic first.", "error");
+    return;
+  }
+  const next = !chatMode;
+  try {
+    const res = await fetch(`${SERVER}/session/${sid}/chat_mode`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ enabled: next }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setStatus(err.detail || "Could not change Chat Mode.", "error");
+      return;
+    }
+    chatMode = next;
+    setChatModeUI(chatMode);
+    clearDisplayWindows();
+    ttsAudio.pause();
+    resetSpeakBtn();
+    setStatus(chatMode
+      ? "💬 Chat Mode on — every utterance now gets an AI reply."
+      : "Chat Mode off.", "ok");
+  } catch (e) {
+    setStatus("Chat Mode error: " + e.message, "error");
+  }
+});
+
+document.getElementById("copy-ai-btn").addEventListener("click", () => {
+  if (!chatResponseEl.value) return;
+  navigator.clipboard.writeText(chatResponseEl.value).then(() => {
+    const btn = document.getElementById("copy-ai-btn");
+    btn.textContent = "✓ Copied";
+    setTimeout(() => btn.textContent = "⎘ Copy", 1500);
+  });
+});
+
+document.getElementById("copy-ai-en-btn").addEventListener("click", () => {
+  if (!chatResponseEn.value) return;
+  navigator.clipboard.writeText(chatResponseEn.value).then(() => {
+    const btn = document.getElementById("copy-ai-en-btn");
+    btn.textContent = "✓ Copied";
+    setTimeout(() => btn.textContent = "⎘ Copy", 1500);
+  });
+});
+
+const speakBtn        = document.getElementById("speak-btn");
+const ttsAudio        = document.getElementById("tts-audio");
+const SPEAK_BTN_LABEL = "🔊 Play";
+
+function resetSpeakBtn() {
+  speakBtn.disabled    = false;
+  speakBtn.textContent = SPEAK_BTN_LABEL;
+  ttsPlaying         = false;
+  micArmedForBargeIn = false;
+  if (bargeInGraceTimer) { clearTimeout(bargeInGraceTimer); bargeInGraceTimer = null; }
+  if (mediaStream) mediaStream.getAudioTracks().forEach(t => t.enabled = true);
+  if (sid) {
+    fetch(`${SERVER}/session/${sid}/playback_ended`, { method: "POST" }).catch(() => {});
+  }
+}
+
+function startPlayback(blob) {
+  if (ttsAudio.src) URL.revokeObjectURL(ttsAudio.src);
+  ttsAudio.src = URL.createObjectURL(blob);
+  speakBtn.disabled    = true;
+  speakBtn.textContent = "⏸ Playing…";
+
+  ttsPlaying         = true;
+  micArmedForBargeIn = false;
+  if (bargeInGraceTimer) clearTimeout(bargeInGraceTimer);
+
+  if (mediaStream) mediaStream.getAudioTracks().forEach(t => t.enabled = false);
+
+  if (ENABLE_BARGE_IN) {
+    bargeInGraceTimer = setTimeout(() => {
+      bargeInGraceTimer = null;
+      if (!ttsPlaying) return;
+      micArmedForBargeIn = true;
+      if (mediaStream) mediaStream.getAudioTracks().forEach(t => t.enabled = true);
+    }, BARGE_IN_GRACE_MS);
+  }
+  
+  return ttsAudio.play();
+}
+
+function _b64ToBlob(audio_b64, mime_type) {
+  const byteChars = atob(audio_b64);
+  const byteNums  = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+  return new Blob([byteNums], { type: mime_type || "audio/wav" });
+}
+
+speakBtn.addEventListener("click", async () => {
+  if (!sid) {
+    setStatus("No active session yet — click the mic first.", "error");
+    return;
+  }
+  if (!chatResponseEl.value.trim()) {
+    setStatus("Nothing to play yet — ask a question first.", "error");
+    return;
+  }
+
+  speakBtn.disabled    = true;
+  speakBtn.textContent = "🔄 Generating…";
+
+  try {
+    const res = await fetch(`${SERVER}/session/${sid}/speak`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setStatus(err.detail || "Could not generate speech.", "error");
+      resetSpeakBtn();
+      return;
+    }
+
+    const data = await res.json();
+    const blob = _b64ToBlob(data.audio_b64, data.mime_type);
+
+    fetch(`${SERVER}/session/${sid}/playback_started`, { method: "POST" }).catch(() => {});
+
+    await startPlayback(blob);
+  } catch (e) {
+    setStatus("Speak error: " + e.message, "error");
+    resetSpeakBtn();
+  }
+});
+
+ttsAudio.addEventListener("ended", resetSpeakBtn);
+ttsAudio.addEventListener("error", resetSpeakBtn);
+
+// ── copy ──────────────────────────────────────────────────────────────────────
+copyBtn.addEventListener("click", () => {
+  if (!transcript.value) return;
+  navigator.clipboard.writeText(transcript.value).then(() => {
+    copyBtn.textContent = "✓ Copied";
+    setTimeout(() => copyBtn.textContent = "⎘ Copy", 1500);
+  });
+});
+
+document.getElementById("copy-eng-btn").addEventListener("click", () => {
+  const val = document.getElementById("translation").value;
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => {
+    document.getElementById("copy-eng-btn").textContent = "✓ Copied";
+    setTimeout(() => document.getElementById("copy-eng-btn").textContent = "⎘ Copy", 1500);
+  });
+});
+
+function setStatus(msg, type = "") {
+  statusBar.textContent = msg;
+  statusBar.className   = type;
+}
+
+// ── init ──────────────────────────────────────────────────────────────────────
+(async () => {
+  await loadMicDevices();
+  await initSession();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "id": "pm_kisan",
+  "name": "PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)",
+  "aliases": ["pmkisan", "pm kisan", "kisan samman nidhi", "pm-kisan samman nidhi"],
+  "launched": "2019",
+  "summary": "Central government income-support scheme for landholding farmer families. Pays Rs 6,000 per year, in three equal instalments of Rs 2,000 every four months, by direct benefit transfer (DBT) to the farmer's Aadhaar-linked bank account.",
+  "eligibility": "Landholding farmer families with cultivable land, as identified and verified by state/UT government land records and the PM-KISAN beneficiary database. Aadhaar-linked bank account required for the DBT payment.",
+  "benefits": "Rs 6,000 per eligible farmer family per year, paid in three instalments of Rs 2,000 (roughly every 4 months).",
+  "how_to_apply": "Register or check status via the PM-KISAN portal (pmkisan.gov.in) or the PM-KISAN mobile app. State governments verify and maintain the eligibility/beneficiary database; a local Common Service Centre (CSC) or the state agriculture department can also help with registration.",
+  "source_note": "Seed/demo data compiled from public reporting around the scheme, NOT an official live feed — installment amounts, dates, and eligibility rules can change. Verify current details at pmkisan.gov.in before relying on this for a real citizen's situation.",
+  "last_updated": "2026-10"
+}

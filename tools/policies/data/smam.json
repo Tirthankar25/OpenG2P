@@ -1,0 +1,12 @@
+{
+  "id": "smam",
+  "name": "SMAM (Sub-Mission on Agricultural Mechanization)",
+  "aliases": ["sub-mission on agricultural mechanization", "smam scheme", "farm machinery subsidy"],
+  "launched": "2014",
+  "summary": "Central government scheme promoting farm mechanization — subsidizes the purchase of agricultural machinery and equipment (tractors, power tillers, harvesters, and other implements) to improve productivity and reduce manual labor (drudgery) in farming.",
+  "eligibility": "Individual farmers, Farmer Producer Organizations (FPOs), agricultural cooperatives, self-help groups engaged in farming, and entities involved in contract farming/agribusiness. Exact eligibility and subsidy percentage can vary by state and by category of machinery.",
+  "benefits": "Subsidy (percentage varies by machine type, farmer category, and state) toward the cost of eligible farm machinery and equipment, paid directly to the applicant's bank account after purchase/verification.",
+  "how_to_apply": "Apply online via the official SMAM/state agriculture department portal. Required documents typically include Aadhaar card, land ownership or lease documents, bank account details, and a machinery purchase proposal/quotation. The state agriculture department verifies and processes the application before subsidy disbursal.",
+  "source_note": "Seed/demo data compiled from public reporting around the scheme, NOT an official live feed — subsidy percentages and eligibility details vary by state and change over time. Verify current details with the state agriculture department or the official SMAM portal before relying on this for a real citizen's situation.",
+  "last_updated": "2026-10"
+}

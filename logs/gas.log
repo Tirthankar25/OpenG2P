@@ -1,0 +1,31 @@
+[launch] starting GAS MCP server on port 8787…
+
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│                                                                              │
+│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │
+│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │
+│                                                                              │
+│                                                                              │
+│                                FastMCP 4.0.10                                │
+│                            https://gofastmcp.com                             │
+│                                                                              │
+│     🖥  Server:      Grievance Addressal System (GAS) — DEMO STUB, 4.0.10     │
+│     🚀 Deploy free: https://horizon.prefect.io                               │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│                          🎉 Update available: 4.1.4                          │
+│                      Run: pip install --upgrade fastmcp                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+[10/27/26 20:35:49] INFO     Starting MCP server 'Grievance     transport.py:363
+                             Addressal System (GAS) — DEMO                      
+                             STUB' with transport 'http' on                     
+                             http://0.0.0.0:8787/mcp                            
+INFO:     Started server process [2408280]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8787 (Press CTRL+C to quit)
